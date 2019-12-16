@@ -1,6 +1,15 @@
 from random import randint
 import socket
 import sys
+import time
+
+
+def recv_from_player(playerr):
+    data = 0
+    while not data:
+        data = playerr.connection.recv(1024)
+        data = data.decode('ascii')
+    return data
 
 
 def send_data_to_player(playerr, data):
@@ -47,21 +56,24 @@ class Menu:
             self.print_menu()
             while not err_flag:
                 try:
-                    choice = int(input("What do you want to do " + player.name + ": "))
+                    send_data_to_player(player, self.print_menu())
+                    time.sleep(0.1)
+                    send_data_to_player(player, "Input_enable")
+                    choice = int(recv_from_player(player))
                     if choice < 1 or choice > 5:
                         raise IndexOut
                 except (ValueError, IndexOut):
-                    print("\nWrong choice, type correct number!\n")
+                    send_data_to_player(player, "\nWrong choice, type correct number!\n")
                 else:
                     err_flag = True
             if choice == 1:
                 player.show_score(self.names)
             elif choice == 2:
                 if re_roll_counter != 0:
-                    player.change_re_roll(gmaster.re_roll(player.box_of_dice))
+                    player.change_re_roll(gmaster.re_roll(player))
                     re_roll_counter -= 1
                 else:
-                    print("\nYou can not re-roll more in this turn!\n")
+                    send_data_to_player(player, "\nYou can not re-roll more in this turn!\n")
             elif choice == 3:
                 print("\n################################### BIND MENU ###################################")
                 bmaster.bind_points(cmaster.check_all(player.allow_to_bind, player.box_of_dice),
@@ -84,22 +96,23 @@ class Dice:
             numbers[throw] = self.roll_a_dice()
         return numbers
 
-    def re_roll(self, numbers):
+    def re_roll(self, player):
+        numbers = player.box_of_dice
         err_flag = False
         while not err_flag:
             try:
-                no_boxes = input("\nType numbers of boxes that you want reroll (1-5 with space, or enter for no reroll): ").split(" ")
+                send_data_to_player(player, "\nType numbers of boxes that you want reroll (1-5 with space, or enter for no reroll): ")
+                send_data_to_player(player, "Input_enable")
+                no_boxes = recv_from_player(player).split(" ")
                 if no_boxes[0] == '':
                     return numbers
                 else:
                     for index in no_boxes:
                         numbers[int(index)-1] = self.roll_a_dice()
-                    print("\nNow you have: ", numbers)
+                    send_data_to_player(player, "\nNow you have: " + str(numbers))
                     return numbers
             except (IndexError, ValueError):
-                print("\nType numbers of dices correctly! Use only digits 1-5 separated with space!\n")
-            else:
-                err_flag = True
+                send_data_to_player(player, "\nType numbers of dices correctly! Use only digits 1-5 separated with space!\n")
         # if empty return the same values, if not empty, change values.
 
     def check_winner(self, player1, player2):
@@ -135,9 +148,11 @@ class Player:
         self.box_of_dice = new_values               # change values from outside
 
     def show_score(self, names):
-        print("\n ################################### YOUR SCORE! ###################################\n")
+        score = "\n ################################### YOUR SCORE! ###################################\n"
         for index, name in enumerate(names):
-            print(name, ": ", self.score_table[index])
+            score += name + ": " + str(self.score_table[index]) + "\n"
+        send_data_to_player(self, score)
+
 
     def recv_name(self):
         while True:
@@ -318,24 +333,31 @@ if __name__ == "__main__":
             player = Player(game_manager.start_roll(), connection, player_address)
             player.recv_name()
             Players.append(player)
+            print("Player connected") ### debug
+            connections -= 1
+
+    print("After game start")  ## debug
+
 
     for player in Players:
         send_data_to_all_players(Players, "GameStart")
 
     while 1:
-        send_data_to_player(Players[0], "Start")
-        send_data_to_player(Players[1], "FIN")
         send_data_to_all_players(Players, "Turn: " + str(Players[0].name))
-        send_data_to_all_players(Players, menu_manager.print_menu() + "\nNow you have: " + str(Players[0].box_of_dice))
+        send_data_to_player(Players[1], "Wait for your turn!")
+        time.sleep(0.1)
+        Players[0].change_re_roll(game_manager.start_roll())
+        send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
+        menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager)
 
 
-        menu_manager.choose_action(Player[0],
-        player1.change_re_roll(game_manager.start_roll())
+        #menu_manager.choose_action(Player[0],
+        #player1.change_re_roll(game_manager.start_roll())
 
-        print("----------------------------------------", player2.name.upper(), "----------------------------------------")
-        print("Now you have:", player2.box_of_dice)
-        menu_manager.choose_action(player2, game_manager, bind_manager, check_manager)
-        player2.change_re_roll(game_manager.start_roll())
+        #print("----------------------------------------", player2.name.upper(), "----------------------------------------")
+        #print("Now you have:", player2.box_of_dice)
+        #menu_manager.choose_action(player2, game_manager, bind_manager, check_manager)
+        #player2.change_re_roll(game_manager.start_roll())
 
-        if game_manager.check_winner(player1, player2):
-            break
+        #if game_manager.check_winner(player1, player2):
+         #   break
