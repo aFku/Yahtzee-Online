@@ -1,3 +1,2 @@
-x = [1,2,3,4,5]
-
-print(type(str(x)))
+x = input("Type Enter")
+print(type(x))

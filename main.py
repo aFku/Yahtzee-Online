@@ -128,13 +128,13 @@ class Dice:
     def check_winner(self, players):
         if players[0].allow_to_bind.count(False) == 13:
             if sum(players[0].score_table) > sum(players[1].score_table):
-                send_data_to_all_players(players, "Player 1 - " + players[0].name + " Wins! He has " + str(sum(players[0].score_table)) + " points")
+                send_data_to_all_players(players, "Player 1 - " + players[0].name + " Won! Winner has " + str(sum(players[0].score_table)) + " points")
                 time.sleep(0.01)
-                send_data_to_all_players(players, "Player 2 - " + players[1].name + "has " + str(sum(players[1].score_table)) + " points")
+                send_data_to_all_players(players, "Player 2 - " + players[1].name + " has " + str(sum(players[1].score_table)) + " points")
                 return 1
             elif sum(players[1].score_table) > sum(players[0].score_table):
                 send_data_to_all_players(players, "Player 2 - " + players[1].name + " Wins! He has " + str(sum(players[1].score_table)) + " points")
-                send_data_to_all_players(players, "Player 1 - " + players[0].name + "has " + str(sum(players[0].score_table)) + " points")
+                send_data_to_all_players(players, "Player 1 - " + players[0].name + " has " + str(sum(players[0].score_table)) + " points")
                 return 1
             else:
                 send_data_to_all_players(players, "DRAW! Points: " + str(sum(players[0].score_table)))
@@ -310,13 +310,13 @@ class Bind:
 
     def bind_points(self, calculation_table, player_scores, permission, player):  # write and read reference!!!
         flag = True   # if choose correct index, change to False
-        err_flag = False
         while flag:
+            err_flag = False
             while not err_flag:
                 try:
                     time.sleep(0.05)
                     send_data_to_player(player,
-                                        "\nType numbers of boxes that you want reroll (1-5 with space, or enter for no reroll): ")
+                                        "\nType number to bind: ")
                     send_data_to_player(player, "Input_enable")
                     index = int(recv_from_player(player))
                     if index < 1 or index > 13:
@@ -360,20 +360,31 @@ if __name__ == "__main__":
     for player in Players:
         send_data_to_all_players(Players, "GameStart")
 
-    while 1:
-        send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
-        send_data_to_player(Players[1], "\nWait for your turn!\n\n")
-        time.sleep(0.1)
-        Players[0].change_re_roll(game_manager.start_roll())
-        send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
-        menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
+    time.sleep(0.01)
 
-        send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
-        send_data_to_player(Players[0], "\nWait for your turn!\n\n")
-        time.sleep(0.1)
-        Players[1].change_re_roll(game_manager.start_roll())
-        send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
-        menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
+    try:
+        while 1:
+            send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
+            send_data_to_player(Players[1], "\nWait for your turn!\n\n")
+            time.sleep(0.1)
+            Players[0].change_re_roll(game_manager.start_roll())
+            send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
+            menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
 
-        if game_manager.check_winner(Players):
-            break
+            send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
+            send_data_to_player(Players[0], "\nWait for your turn!\n\n")
+            time.sleep(0.1)
+            Players[1].change_re_roll(game_manager.start_roll())
+            send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
+            menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
+
+            if game_manager.check_winner(Players):
+                send_data_to_all_players(Players, "Closing!")
+                break
+    except:
+        send_data_to_all_players(Players, "One of the players is disconnected!\nexiting()")
+
+    sock.close()
+    print("Game End")
+
+

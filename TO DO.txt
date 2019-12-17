@@ -1,0 +1,2 @@
+Handle Ctrl-c signal
+Handle with case when this is not your turn and you type sth and when turn is yours there is no menu displayed
