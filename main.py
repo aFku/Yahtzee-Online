@@ -47,9 +47,11 @@ class Menu:
                "2. Re-roll a dice\n"  \
                "3. Bind points\n"   \
                "4. See your deck\n"  \
-               "5. See menu again\n"
+               "5. See menu again\n" \
+               "6. See your opponent points\n"
 
-    def choose_action(self, player, gmaster, bmaster, cmaster):
+    def choose_action(self, player, gmaster, bmaster, cmaster, opponent):
+        choice = 0
         re_roll_counter = 2
         while 1:
             err_flag = False
@@ -60,14 +62,16 @@ class Menu:
                     time.sleep(0.1)
                     send_data_to_player(player, "Input_enable")
                     choice = int(recv_from_player(player))
-                    if choice < 1 or choice > 5:
+                    if choice < 1 or choice > 6:
                         raise IndexOut
                 except (ValueError, IndexOut):
                     send_data_to_player(player, "\nWrong choice, type correct number!\n")
                 else:
                     err_flag = True
             if choice == 1:
-                player.show_score(self.names)
+                send_data_to_player(player, "\n ################################### YOUR SCORE! ###################################\n")
+                time.sleep(0.05)
+                send_data_to_player(player, player.show_score(self.names))
             elif choice == 2:
                 if re_roll_counter != 0:
                     player.change_re_roll(gmaster.re_roll(player))
@@ -75,14 +79,20 @@ class Menu:
                 else:
                     send_data_to_player(player, "\nYou can not re-roll more in this turn!\n")
             elif choice == 3:
-                print("\n################################### BIND MENU ###################################")
-                bmaster.bind_points(cmaster.check_all(player.allow_to_bind, player.box_of_dice),
-                                    player.score_table, player.allow_to_bind)
+                send_data_to_player(player ,"\n################################### BIND MENU ###################################")
+                time.sleep(0.05)
+                bmaster.bind_points(cmaster.check_all(player),
+                                    player.score_table, player.allow_to_bind, player)
                 break
             elif choice == 4:
-                print("Your deck:  " + str(player.box_of_dice) + "\n")
+                send_data_to_player(player, "Your deck:  " + str(player.box_of_dice) + "\n")
             elif choice == 5:
-                print("\n\n")
+                send_data_to_player(player, "\n\n")
+            elif choice == 6:
+                send_data_to_player(player,
+                                    "\n ################################### OPPONENTs SCORE! ###################################\n")
+                time.sleep(0.05)
+                send_data_to_player(player, opponent.show_score(self.names))
 
 
 class Dice:
@@ -115,18 +125,19 @@ class Dice:
                 send_data_to_player(player, "\nType numbers of dices correctly! Use only digits 1-5 separated with space!\n")
         # if empty return the same values, if not empty, change values.
 
-    def check_winner(self, player1, player2):
-        if player1.allow_to_bind.count(False) == 13:
-            if sum(player1.score_table) > sum(player2.score_table):
-                print("Player 1 - ", player1.name, " Wins! He has ", sum(player1.score_table), " points")
-                print("Player 2 - ", player2.name, "has ", sum(player2.score_table), " points")
+    def check_winner(self, players):
+        if players[0].allow_to_bind.count(False) == 13:
+            if sum(players[0].score_table) > sum(players[1].score_table):
+                send_data_to_all_players(players, "Player 1 - " + players[0].name + " Wins! He has " + str(sum(players[0].score_table)) + " points")
+                time.sleep(0.01)
+                send_data_to_all_players(players, "Player 2 - " + players[1].name + "has " + str(sum(players[1].score_table)) + " points")
                 return 1
-            elif sum(player2.score_table) > sum(player1.score_table):
-                print("Player 2 - ", player2.name, " Wins! He has ", sum(player2.score_table), " points")
-                print("Player 1 - ", player1.name, "has ", sum(player1.score_table), " points")
+            elif sum(players[1].score_table) > sum(players[0].score_table):
+                send_data_to_all_players(players, "Player 2 - " + players[1].name + " Wins! He has " + str(sum(players[1].score_table)) + " points")
+                send_data_to_all_players(players, "Player 1 - " + players[0].name + "has " + str(sum(players[0].score_table)) + " points")
                 return 1
             else:
-                print("DRAW! Points: ", sum(player1.score_table))
+                send_data_to_all_players(players, "DRAW! Points: " + str(sum(players[0].score_table)))
                 return 1
         else:
             return 0
@@ -148,10 +159,10 @@ class Player:
         self.box_of_dice = new_values               # change values from outside
 
     def show_score(self, names):
-        score = "\n ################################### YOUR SCORE! ###################################\n"
+        score = ""
         for index, name in enumerate(names):
             score += name + ": " + str(self.score_table[index]) + "\n"
-        send_data_to_player(self, score)
+        return score
 
 
     def recv_name(self):
@@ -166,7 +177,7 @@ class Player:
 
 class Check:
 
-    def check_upper(self, enable, player_box):
+    def check_upper(self, enable, player_box, player):
 
         # there will be boolean table from bind class which tell us what should be
         # displayed and calculated, if binded already, value remain the same as before.
@@ -177,7 +188,7 @@ class Check:
 
         for numbers in range(1, 7):    # each numbers 1-6
             if enable[numbers-1]:     # check if already binded
-                print(names[numbers - 1], " - Points: ", calculation(numbers))
+                send_data_to_player(player, names[numbers - 1] + " - Points: " + str(calculation(numbers)) + "\n")
                 names[numbers-1] = calculation(numbers)  # calculate and display
 
         return names
@@ -192,37 +203,37 @@ class Check:
                 continue
         return False
 
-    def check_three_kind(self, enable, player_box):
+    def check_three_kind(self, enable, player_box, player):
         if enable[6] and self.check_count(player_box, 3):
-            print("7. Three Of A Kind - Points: ", sum(player_box))
+            send_data_to_player(player, "7. Three Of A Kind - Points: " + str(sum(player_box)) + "\n")
             return [sum(player_box)]
         elif enable[6]:
-            print("7. Three Of A Kind - Points: 0")
+            send_data_to_player(player, "7. Three Of A Kind - Points: 0" + "\n")
             return [0]
         else:
             return [999]
         # check if there is three same elements of set in box
         # must be three numbers in set
 
-    def check_four_kind(self, enable, player_box):
+    def check_four_kind(self, enable, player_box, player):
         if enable[7] and self.check_count(player_box, 4):
-            print("8. Four Of A Kind - Points: ", sum(player_box))
+            send_data_to_player(player, "8. Four Of A Kind - Points: " + str(sum(player_box)) + "\n")
             return [sum(player_box)]
         elif enable[7]:
-            print("8. Four Of A Kind - Points: 0")
+            send_data_to_player(player, "8. Four Of A Kind - Points: 0" + "\n")
             return [0]
         else:
             return [999]
         # check if there is four same elements of set in box
 
-    def check_full_house(self, enable, player_box):
+    def check_full_house(self, enable, player_box, player):
         sorted_box = sorted(player_box)
         if enable[8] and ((sorted_box[0:3].count(sorted_box[0]) == 3 and sorted_box[3:6].count(sorted_box[4]) == 2) or
                           (sorted_box[0:2].count(sorted_box[0]) == 2 and sorted_box[2:6].count(sorted_box[3]) == 3)):
-            print("9. Full House - Points: 25")
+            send_data_to_player(player, "9. Full House - Points: 25" + "\n")
             return [25]
         elif enable[8]:
-            print("9. Full House - Points: 0")
+            send_data_to_player(player, "9. Full House - Points: 0" + "\n")
             return [0]
         else:
             return [999]
@@ -244,67 +255,74 @@ class Check:
 
         # check if there is combination 1-2-3-4 , 1-2-3-4-5, 2-3-4-5
 
-    def check_small_straight(self, enable, player_box):
+    def check_small_straight(self, enable, player_box, player):
         if self.straight_counter(enable, player_box) == 4 and enable[9]:
-            print("10. Small Straight - Points: 30")
+            send_data_to_player(player, "10. Small Straight - Points: 30" + "\n")
             return [30]
         elif enable[9]:
-            print("10. Small Straight - Points: 0")
+            send_data_to_player(player, "10. Small Straight - Points: 0" + "\n")
             return [0]
         else:
             return [999]
 
-    def check_large_straight(self, enable, player_box):
+    def check_large_straight(self, enable, player_box, player):
         if self.straight_counter(enable, player_box) == 5:
-            print("11. Large Straight - Points: 40")
+            send_data_to_player(player, "11. Large Straight - Points: 40" + "\n")
             return [40]
         elif enable[10]:
-            print("11. Large Straight - Points: 0")
+            send_data_to_player(player, "11. Large Straight - Points: 0" + "\n")
             return [0]
         else:
             return [999]
 
-    def check_yahtzee(self, enable, player_box):
+    def check_yahtzee(self, enable, player_box, player):
         if player_box.count(player_box[0]) == 5 and enable[11]:
-            print("12. Yahtzee - Points: 50")
+            send_data_to_player(player, "12. Yahtzee - Points: 50" + "\n")
             return [50]
         elif enable[11]:
-            print("12. Yahtzee - Points: 0")
+            send_data_to_player(player, "12. Yahtzee - Points: 0" + "\n")
             return [0]
         else:
             return [999]
 
-    def check_chance(self, enable, player_box):
+    def check_chance(self, enable, player_box, player):
         if enable[12]:
-            print("13. Chance - Points: ", sum(player_box))
+            send_data_to_player(player, "13. Chance - Points: " + str(sum(player_box)) + "\n")
+            time.sleep(0.05)
             return [sum(player_box)]
         else:
             return [999]
 
-    def check_all(self, enable, player_box):
-        return (self.check_upper(enable, player_box) +
-                self.check_three_kind(enable, player_box) +
-                self.check_four_kind(enable, player_box) +
-                self.check_full_house(enable, player_box) +
-                self.check_small_straight(enable, player_box) +
-                self.check_large_straight(enable, player_box) +
-                self.check_yahtzee(enable, player_box) +
-                self.check_chance(enable, player_box))
+    def check_all(self, player):
+        enable = player.allow_to_bind
+        player_box = player.box_of_dice
+        return (self.check_upper(enable, player_box, player) +
+                self.check_three_kind(enable, player_box, player) +
+                self.check_four_kind(enable, player_box, player) +
+                self.check_full_house(enable, player_box, player) +
+                self.check_small_straight(enable, player_box, player) +
+                self.check_large_straight(enable, player_box, player) +
+                self.check_yahtzee(enable, player_box, player) +
+                self.check_chance(enable, player_box, player))
 
 
 class Bind:
 
-    def bind_points(self, calculation_table, player_scores, permission):  # write and read reference!!!
+    def bind_points(self, calculation_table, player_scores, permission, player):  # write and read reference!!!
         flag = True   # if choose correct index, change to False
         err_flag = False
         while flag:
             while not err_flag:
                 try:
-                    index = int(input("\nType index of points you want to bind to your score: "))
+                    time.sleep(0.05)
+                    send_data_to_player(player,
+                                        "\nType numbers of boxes that you want reroll (1-5 with space, or enter for no reroll): ")
+                    send_data_to_player(player, "Input_enable")
+                    index = int(recv_from_player(player))
                     if index < 1 or index > 13:
                         raise IndexOut
                 except (ValueError, IndexOut):
-                    print("Type correct number (only one number 1-13)")
+                    send_data_to_player(player, "Type correct number (only one number 1-13)")
                 else:
                     err_flag = True
             if permission[index-1]:
@@ -312,7 +330,7 @@ class Bind:
                 player_scores[index-1] = calculation_table[index-1]  # write value by reference to table in object
                 permission[index-1] = False   # Block binding this points again
             else:
-                print("\nYou choose bad index. Try again!\n")
+                send_data_to_player(player, "\nYou choose bad index. Try again!\n")
 
 
 if __name__ == "__main__":
@@ -343,21 +361,19 @@ if __name__ == "__main__":
         send_data_to_all_players(Players, "GameStart")
 
     while 1:
-        send_data_to_all_players(Players, "Turn: " + str(Players[0].name))
-        send_data_to_player(Players[1], "Wait for your turn!")
+        send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
+        send_data_to_player(Players[1], "\nWait for your turn!\n\n")
         time.sleep(0.1)
         Players[0].change_re_roll(game_manager.start_roll())
         send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
-        menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager)
+        menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
 
+        send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
+        send_data_to_player(Players[0], "\nWait for your turn!\n\n")
+        time.sleep(0.1)
+        Players[1].change_re_roll(game_manager.start_roll())
+        send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
+        menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
 
-        #menu_manager.choose_action(Player[0],
-        #player1.change_re_roll(game_manager.start_roll())
-
-        #print("----------------------------------------", player2.name.upper(), "----------------------------------------")
-        #print("Now you have:", player2.box_of_dice)
-        #menu_manager.choose_action(player2, game_manager, bind_manager, check_manager)
-        #player2.change_re_roll(game_manager.start_roll())
-
-        #if game_manager.check_winner(player1, player2):
-         #   break
+        if game_manager.check_winner(Players):
+            break

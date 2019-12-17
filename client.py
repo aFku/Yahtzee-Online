@@ -36,7 +36,6 @@ signal = None
 while signal != "GameStart":
     signal = sock.recv(1024)
     signal = signal.decode('ascii')
-    print(signal)
 
 print("after Gamestart")
 
