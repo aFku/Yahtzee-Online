@@ -138,13 +138,13 @@ class Dice:
                 send_data_to_all_players(players, "Player 1 - " + players[0].name + " Won! Winner has " + str(sum(players[0].score_table)) + " points")
                 time.sleep(0.01)
                 send_data_to_all_players(players, "Player 2 - " + players[1].name + " has " + str(sum(players[1].score_table)) + " points")
-                logger.info(players[0].name + ' won with ' + str(sum(players[0].score_table)) + 'points! Second player '/
+                logger.info(players[0].name + ' won with ' + str(sum(players[0].score_table)) + 'points! Second player ' +
                             players[1].name + ' has ' + str(sum(players[1].score_table)) + 'points')
                 return 1
             elif sum(players[1].score_table) > sum(players[0].score_table):
                 send_data_to_all_players(players, "Player 2 - " + players[1].name + " Wins! He has " + str(sum(players[1].score_table)) + " points")
                 send_data_to_all_players(players, "Player 1 - " + players[0].name + " has " + str(sum(players[0].score_table)) + " points")
-                logger.info(players[1].name + ' won with ' + str(sum(players[1].score_table)) + 'points! Second player '/
+                logger.info(players[1].name + ' won with ' + str(sum(players[1].score_table)) + 'points! Second player ' +
                             players[0].name + ' has ' + str(sum(players[0].score_table)) + 'points')
                 return 1
             else:
