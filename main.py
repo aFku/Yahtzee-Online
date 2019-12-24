@@ -491,51 +491,51 @@ if __name__ == "__main__":
     local_address = ("localhost", 10000)
     bind_address(local_address, sock)
     sock.listen(1)
-    my_logger.info('Server start listening')
-    connections = 2
-    Players = []
-    while connections:
-        connection, player_address = sock.accept()
-        if len(player_address) != 0:
-            player = Player(game_manager.start_roll(), connection, player_address)
-            player.recv_name()
-            Players.append(player)
-            connections -= 1
-            my_logger.info('Player connected with IP: ' + str(player_address) + ' and with name: ' + player.name)
-
-    my_logger.info('Game started')
-
-    time.sleep(0.1)
-
-    send_data_to_all_players(Players, "GameStart")
-
-    time.sleep(0.1)
-
     while 1:
-            try:
-                send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
-                send_data_to_player(Players[1], "\nWait for your turn!\n\n")
-                time.sleep(0.1)
-                Players[0].change_re_roll(game_manager.start_roll())
-                send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
-                menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
+        my_logger.info('Server start listening')
+        connections = 2
+        Players = []
+        while connections:
+            connection, player_address = sock.accept()
+            if len(player_address) != 0:
+                player = Player(game_manager.start_roll(), connection, player_address)
+                player.recv_name()
+                Players.append(player)
+                connections -= 1
+                my_logger.info('Player connected with IP: ' + str(player_address) + ' and with name: ' + player.name)
 
-                send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
-                send_data_to_player(Players[0], "\nWait for your turn!\n\n")
-                time.sleep(0.1)
-                Players[1].change_re_roll(game_manager.start_roll())
-                send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
-                menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
+        my_logger.info('Game started')
 
-                if game_manager.check_winner(Players, my_logger):
+        time.sleep(0.1)
+
+        send_data_to_all_players(Players, "GameStart")
+
+        time.sleep(0.1)
+
+        while 1:
+                try:
+                    send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
+                    send_data_to_player(Players[1], "\nWait for your turn!\n\n")
                     time.sleep(0.1)
-                    send_data_to_all_players(Players, "Closing!")
+                    Players[0].change_re_roll(game_manager.start_roll())
+                    send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
+                    menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
+
+                    send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
+                    send_data_to_player(Players[0], "\nWait for your turn!\n\n")
+                    time.sleep(0.1)
+                    Players[1].change_re_roll(game_manager.start_roll())
+                    send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
+                    menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
+
+                    if game_manager.check_winner(Players, my_logger):
+                        time.sleep(0.1)
+                        send_data_to_all_players(Players, "Closing!")
+                        break
+                except PlayerDisconnect:
+                    send_data_to_all_players(Players, "\nOne of the player disconnect from server!\nClosing!")
+                    my_logger.error('Player has been disconnected from game before end! Server will be shutdown!')
                     sock.close()
-                    exit()
-            except PlayerDisconnect:
-                send_data_to_all_players(Players, "\nOne of the player disconnect from server!\nClosing!")
-                my_logger.error('Player has been disconnected from game before end! Server will be shutdown!')
-                sock.close()
-                exit()
+                    daemon.stop()
 
 
