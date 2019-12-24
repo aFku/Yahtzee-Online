@@ -474,7 +474,7 @@ class Bind:
 
 
 if __name__ == "__main__":
-    daemon = Daemon()
+    daemon = Daemon('pid.pid')
     daemon.start()
 
     my_logger = logging.getLogger('MyLogger')
