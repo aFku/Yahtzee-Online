@@ -374,6 +374,8 @@ if __name__ == "__main__":
 
     my_logger.info('Game started')
 
+    time.sleep(0.01)
+
     for player in Players:
         send_data_to_all_players(Players, "GameStart")
 
