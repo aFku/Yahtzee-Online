@@ -376,8 +376,7 @@ if __name__ == "__main__":
 
     time.sleep(0.1)
 
-    for player in Players:
-        send_data_to_all_players(Players, "GameStart")
+    send_data_to_all_players(Players, "GameStart")
 
     time.sleep(0.1)
 
