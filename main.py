@@ -2,6 +2,11 @@ from random import randint
 import socket
 import sys
 import time
+import logging, logging.handlers
+
+
+class PlayerDisconnect(Exception):
+    pass
 
 
 def recv_from_player(playerr):
@@ -9,6 +14,8 @@ def recv_from_player(playerr):
     while not data:
         data = playerr.connection.recv(1024)
         data = data.decode('ascii')
+        if data == "Disconnect":
+            raise PlayerDisconnect
     return data
 
 
@@ -125,19 +132,24 @@ class Dice:
                 send_data_to_player(player, "\nType numbers of dices correctly! Use only digits 1-5 separated with space!\n")
         # if empty return the same values, if not empty, change values.
 
-    def check_winner(self, players):
+    def check_winner(self, players, logger):
         if players[0].allow_to_bind.count(False) == 13:
             if sum(players[0].score_table) > sum(players[1].score_table):
                 send_data_to_all_players(players, "Player 1 - " + players[0].name + " Won! Winner has " + str(sum(players[0].score_table)) + " points")
                 time.sleep(0.01)
                 send_data_to_all_players(players, "Player 2 - " + players[1].name + " has " + str(sum(players[1].score_table)) + " points")
+                logger.info(players[0].name + ' won with ' + str(sum(players[0].score_table)) + 'points! Second player '/
+                            players[1].name + ' has ' + str(sum(players[1].score_table)) + 'points')
                 return 1
             elif sum(players[1].score_table) > sum(players[0].score_table):
                 send_data_to_all_players(players, "Player 2 - " + players[1].name + " Wins! He has " + str(sum(players[1].score_table)) + " points")
                 send_data_to_all_players(players, "Player 1 - " + players[0].name + " has " + str(sum(players[0].score_table)) + " points")
+                logger.info(players[1].name + ' won with ' + str(sum(players[1].score_table)) + 'points! Second player '/
+                            players[0].name + ' has ' + str(sum(players[0].score_table)) + 'points')
                 return 1
             else:
                 send_data_to_all_players(players, "DRAW! Points: " + str(sum(players[0].score_table)))
+                logger.info("DRAW! Points: " + str(sum(players[0].score_table)))
                 return 1
         else:
             return 0
@@ -334,6 +346,11 @@ class Bind:
 
 
 if __name__ == "__main__":
+    my_logger = logging.getLogger('MyLogger')
+    my_logger.setLevel(logging.DEBUG)
+    handler = logging.handlers.SysLogHandler(address= '/dev/log')
+    my_logger.addHandler(handler)
+
     game_manager = Dice()  # Initialization of Game manager
     check_manager = Check()  # Initialization of Check manager
     bind_manager = Bind()  # Initialization of Bind manager
@@ -343,6 +360,7 @@ if __name__ == "__main__":
     local_address = ("localhost", 10000)
     bind_address(local_address, sock)
     sock.listen(1)
+    my_logger.info('Server start listening')
     connections = 2
     Players = []
     while connections:
@@ -351,40 +369,40 @@ if __name__ == "__main__":
             player = Player(game_manager.start_roll(), connection, player_address)
             player.recv_name()
             Players.append(player)
-            print("Player connected") ### debug
             connections -= 1
+            my_logger.info('Player connected with IP: ' + str(player_address) + ' and with name: ' + player.name)
 
-    print("After game start")  ## debug
-
+    my_logger.info('Game started')
 
     for player in Players:
         send_data_to_all_players(Players, "GameStart")
 
     time.sleep(0.01)
 
-    try:
-        while 1:
-            send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
-            send_data_to_player(Players[1], "\nWait for your turn!\n\n")
-            time.sleep(0.1)
-            Players[0].change_re_roll(game_manager.start_roll())
-            send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
-            menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
+    while 1:
+            try:
+                send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
+                send_data_to_player(Players[1], "\nWait for your turn!\n\n")
+                time.sleep(0.1)
+                Players[0].change_re_roll(game_manager.start_roll())
+                send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
+                menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
 
-            send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
-            send_data_to_player(Players[0], "\nWait for your turn!\n\n")
-            time.sleep(0.1)
-            Players[1].change_re_roll(game_manager.start_roll())
-            send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
-            menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
+                send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
+                send_data_to_player(Players[0], "\nWait for your turn!\n\n")
+                time.sleep(0.1)
+                Players[1].change_re_roll(game_manager.start_roll())
+                send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
+                menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
 
-            if game_manager.check_winner(Players):
-                send_data_to_all_players(Players, "Closing!")
-                break
-    except:
-        send_data_to_all_players(Players, "One of the players is disconnected!\nexiting()")
+                if game_manager.check_winner(Players, my_logger):
+                    send_data_to_all_players(Players, "Closing!")
+                    break
+            except PlayerDisconnect:
+                send_data_to_all_players(Players, "\nOne of the player disconnect from server!\nClosing!")
+                my_logger.error('Player has been disconnected from game before end! Server will be shutdown!')
 
     sock.close()
-    print("Game End")
+    my_logger.warning('Server shutdown!')
 
 

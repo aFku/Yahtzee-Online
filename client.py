@@ -3,7 +3,7 @@ import sys
 
 
 def send_to_server(socket_server, data):
-        socket_server.sendall(bytearray(data, 'ascii'))
+    socket_server.sendall(bytearray(data, 'ascii'))
 
 
 def recv_from_server(socket_server):
@@ -48,7 +48,10 @@ while True:
         else:
             response = ""
             while response == "":
-                response = input("Input: ")
+                try:
+                    response = input("Input: ")
+                except KeyboardInterrupt:
+                    response = "Disconnect"
             send_to_server(sock, response)
         if "Closing!" in data:
             break
