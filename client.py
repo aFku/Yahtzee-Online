@@ -20,6 +20,7 @@ server_address = ("localhost", 10000)
 
 print("Connecting to server", file=sys.stdout)
 
+
 sock.connect(server_address)
 
 sock.sendall(bytearray(name, 'ascii'))
