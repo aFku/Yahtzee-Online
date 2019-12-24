@@ -514,6 +514,8 @@ if __name__ == "__main__":
 
         while 1:
                 try:
+                    print("Player 1:", Players[0].connection)  #DE
+                    print("Player 2:", Players[1].connection)   #BUG
                     send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
                     send_data_to_player(Players[1], "\nWait for your turn!\n\n")
                     time.sleep(0.1)
