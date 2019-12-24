@@ -397,15 +397,14 @@ if __name__ == "__main__":
                 menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
 
                 if game_manager.check_winner(Players, my_logger):
+                    time.sleep(0.1)
                     send_data_to_all_players(Players, "Closing!")
-                    break
+                    sock.close()
+                    exit()
             except PlayerDisconnect:
                 send_data_to_all_players(Players, "\nOne of the player disconnect from server!\nClosing!")
                 my_logger.error('Player has been disconnected from game before end! Server will be shutdown!')
                 sock.close()
                 exit()
-
-    sock.close()
-    exit()
 
 
