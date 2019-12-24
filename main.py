@@ -402,8 +402,10 @@ if __name__ == "__main__":
             except PlayerDisconnect:
                 send_data_to_all_players(Players, "\nOne of the player disconnect from server!\nClosing!")
                 my_logger.error('Player has been disconnected from game before end! Server will be shutdown!')
+                sock.close()
+                exit()
 
     sock.close()
-    my_logger.warning('Server shutdown!')
+    exit()
 
 
