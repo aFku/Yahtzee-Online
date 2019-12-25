@@ -435,12 +435,12 @@ class Bind:
 
 
 if __name__ == "__main__":
-    try:
-        daemon = Daemon('pid.pid')
-        daemon.start()
-    except:
-        print('Can`t start daemon! Program will be closed!', file=sys.stderr)
-        exit()
+    #try:
+    daemon = Daemon('pid.pid')
+    daemon.start()
+    #except:
+     #   print('Can`t start daemon! Program will be closed!', file=sys.stderr)
+      #  exit()
 
     my_logger = None
     try:
