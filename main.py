@@ -114,7 +114,7 @@ def recv_from_player(playerr):
     while not data:
         data = playerr.connection.recv(1024)
         data = data.decode('ascii')
-        if data == "Disconnect":
+        if "Disconnect" in data:
             raise PlayerDisconnect
     return data
 
@@ -496,12 +496,16 @@ if __name__ == "__main__":
 
         while 1:
                 try:
+                    recv_from_player(Players[0])
+
                     send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
                     send_data_to_player(Players[1], "\nWait for your turn!\n\n")
                     time.sleep(0.1)
                     Players[0].change_re_roll(game_manager.start_roll())
                     send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
                     menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
+
+                    recv_from_player(Players[1])
 
                     send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
                     send_data_to_player(Players[0], "\nWait for your turn!\n\n")
