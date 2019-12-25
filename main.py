@@ -105,8 +105,16 @@ class Daemon:
     def run(self):
         pass
 
+
 class PlayerDisconnect(Exception):
     pass
+
+
+def clear_buffor(playerr):
+    data = playerr.connection.recv(1024)
+    data = data.decode('ascii')
+    if "Disconnect" in data:
+        raise PlayerDisconnect
 
 
 def recv_from_player(playerr):
@@ -435,12 +443,8 @@ class Bind:
 
 
 if __name__ == "__main__":
-    #try:
     daemon = Daemon('pid.pid')
     daemon.start()
-    #except:
-     #   print('Can`t start daemon! Program will be closed!', file=sys.stderr)
-      #  exit()
 
     my_logger = None
     try:
@@ -496,7 +500,7 @@ if __name__ == "__main__":
 
         while 1:
                 try:
-                    recv_from_player(Players[0])
+                    clear_buffor(Players[0])
 
                     send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
                     send_data_to_player(Players[1], "\nWait for your turn!\n\n")
@@ -505,7 +509,7 @@ if __name__ == "__main__":
                     send_data_to_player(Players[0], "\nNow you have: " + str(Players[0].box_of_dice))
                     menu_manager.choose_action(Players[0], game_manager, bind_manager, check_manager, Players[1])
 
-                    recv_from_player(Players[1])
+                    clear_buffor(Players[1])
 
                     send_data_to_all_players(Players, "\nTurn: " + str(Players[1].name))
                     send_data_to_player(Players[0], "\nWait for your turn!\n\n")
