@@ -500,7 +500,6 @@ if __name__ == "__main__":
 
         while 1:
                 try:
-                    clear_buffor(Players[0])
 
                     send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
                     send_data_to_player(Players[1], "\nWait for your turn!\n\n")
@@ -517,6 +516,8 @@ if __name__ == "__main__":
                     Players[1].change_re_roll(game_manager.start_roll())
                     send_data_to_player(Players[1], "\nNow you have: " + str(Players[1].box_of_dice))
                     menu_manager.choose_action(Players[1], game_manager, bind_manager, check_manager, Players[0])
+
+                    clear_buffor(Players[0])
 
                     if game_manager.check_winner(Players, my_logger):
                         time.sleep(0.1)
