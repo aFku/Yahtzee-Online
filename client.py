@@ -11,48 +11,67 @@ def recv_from_server(socket_server):
     return data_rcv.decode('ascii')
 
 
+if __name__ == "__main__":
 
-name = input("Type your name: ")
+    name = input("Type your name: ")
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock = None
+    server_address = None
 
-server_address = ("localhost", 10000)
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    except:
+        print("Can`t create socket!  Program will be closed!", file=sys.stderr)
+        exit()
 
-print("Connecting to server", file=sys.stdout)
+    address = input("Type server name: ")
 
+    try:
+        address = socket.gethostbyname(address)
+    except:
+        print("Can`t resolve this name. Try insert ip address of server", file=sys.stdout)
+        address = input("Server IP: ")
 
-sock.connect(server_address)
+    try:
+        server_address = (address, 10000)
+    except:
+        print("Can`t connect to the server! Program will be closed!", file=sys.stderr)
+        exit()
 
-sock.sendall(bytearray(name, 'ascii'))
+    print("Connecting to server", file=sys.stdout)
 
-response = 0
+    sock.connect(server_address)
 
-while response != "name_recived":
-    response = sock.recv(1024).decode('ascii')
+    sock.sendall(bytearray(name, 'ascii'))
 
-print("Wait for game start!", file=sys.stdout)
+    response = 0
 
-signal = None
+    while response != "name_recived":
+        response = sock.recv(1024).decode('ascii')
 
-while signal != "GameStart":
-    signal = sock.recv(1024)
-    signal = signal.decode('ascii')
+    print("Wait for game start!", file=sys.stdout)
 
-print("after Gamestart")
+    signal = None
 
-input_enable = False
+    while signal != "GameStart":
+        signal = sock.recv(1024)
+        signal = signal.decode('ascii')
 
-while True:
-        data = recv_from_server(sock)
-        if "Input_enable" not in data:
-            print(data)
-        else:
-            response = ""
-            while response == "":
-                try:
-                    response = input("Input: ")
-                except KeyboardInterrupt:
-                    response = "Disconnect"
-            send_to_server(sock, response)
-        if "Closing!" in data:
-            break
+    print("after Gamestart")
+
+    input_enable = False
+
+    while True:
+            data = recv_from_server(sock)
+            if "Input_enable" not in data:
+                print(data)
+            else:
+                response = ""
+                while response == "":
+                    try:
+                        response = input("Input: ")
+                    except KeyboardInterrupt:
+                        response = "Disconnect"
+                send_to_server(sock, response)
+            if "Closing!" in data:
+                break

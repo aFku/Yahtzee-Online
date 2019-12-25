@@ -8,12 +8,6 @@ from signal import SIGTERM
 
 
 class Daemon:
-    """
-    A generic daemon class.
-
-    Usage: subclass the Daemon class and override the run() method
-    """
-
     def __init__(self, pidfile, stdin='/dev/null', stdout='/dev/null', stderr='/dev/null'):
         self.stdin = stdin
         self.stdout = stdout
@@ -21,21 +15,15 @@ class Daemon:
         self.pidfile = pidfile
 
     def daemonize(self):
-        """
-        do the UNIX double-fork magic, see Stevens' "Advanced
-        Programming in the UNIX Environment" for details (ISBN 0201563177)
-        http://www.erlenstar.demon.co.uk/unix/faq_2.html#SEC16
-        """
         try:
             pid = os.fork()
             if pid > 0:
                 # exit first parent
                 sys.exit(0)
         except Exception as e:
-            sys.stderr.write("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
-            sys.exit(1)
+            print("fork #1 failed! Program will be closed!", file=sys.stderr)
+            sys.exit(0)
 
-        # decouple from parent environment
         os.chdir("/")
         os.setsid()
         os.umask(0)
@@ -44,10 +32,9 @@ class Daemon:
         try:
             pid = os.fork()
             if pid > 0:
-                # exit from second parent
                 sys.exit(0)
         except Exception as e:
-            sys.stderr.write("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
+            print("fork #2 failed! Program will be closed!", file=sys.stderr)
             sys.exit(1)
 
         # redirect standard file descriptors
@@ -69,9 +56,6 @@ class Daemon:
         os.remove(self.pidfile)
 
     def start(self):
-        """
-        Start the daemon
-        """
         # Check for a pidfile to see if the daemon already runs
         try:
             pf = open(self.pidfile, 'r')
@@ -81,8 +65,7 @@ class Daemon:
             pid = None
 
         if pid:
-            message = "pidfile %s already exist. Daemon already running?\n"
-            sys.stderr.write(message % self.pidfile)
+            print("pidfile exist, daemon already running?", file=sys.stderr)
             sys.exit(1)
 
         # Start the daemon
@@ -90,9 +73,6 @@ class Daemon:
         self.run()
 
     def stop(self):
-        """
-        Stop the daemon
-        """
         # Get the pid from the pidfile
         try:
             pf = open(self.pidfile, 'r')
@@ -102,8 +82,7 @@ class Daemon:
             pid = None
 
         if not pid:
-            message = "pidfile %s does not exist. Daemon not running?\n"
-            sys.stderr.write(message % self.pidfile)
+            print("pidfile doesn`t exist, daemon is not running?", file=sys.stderr)
             return  # not an error in a restart
 
         # Try killing the daemon process
@@ -120,18 +99,11 @@ class Daemon:
                 sys.exit(1)
 
     def restart(self):
-        """
-        Restart the daemon
-        """
         self.stop()
         self.start()
 
     def run(self):
-        """
-        You should override this method when you subclass Daemon. It will be called after the process has been
-        daemonized by start() or restart().
-        """
-
+        pass
 
 class PlayerDisconnect(Exception):
     pass
@@ -155,17 +127,6 @@ def send_data_to_all_players(players, data):
     for gamer in players:
         send_data_to_player(gamer, data)
 
-
-def bind_address(address, sock):
-    try:
-        sock.bind(address)
-    except:
-        print("Can`t bind address", file=sys.stderr)
-        exit()
-    else:
-        print("Server is binded to address %s on port %s" % address, file=sys.stdout)
-
-#zamienic box na deck
 
 class IndexOut(Exception):
     pass
@@ -474,23 +435,42 @@ class Bind:
 
 
 if __name__ == "__main__":
-    daemon = Daemon('pid.pid')
-    daemon.start()
+    try:
+        daemon = Daemon('pid.pid')
+        daemon.start()
+    except:
+        print('Can`t start daemon! Program will be closed!', file=sys.stderr)
+        exit()
 
-    my_logger = logging.getLogger('MyLogger')
-    my_logger.setLevel(logging.DEBUG)
-    handler = logging.handlers.SysLogHandler(address= '/dev/log')
-    my_logger.addHandler(handler)
+    my_logger = None
+    try:
+        my_logger = logging.getLogger('MyLogger')
+        my_logger.setLevel(logging.DEBUG)
+        handler = logging.handlers.SysLogHandler(address= '/dev/log')
+        my_logger.addHandler(handler)
+    except:
+        print('Can`t set up logger!  Program will be closed!', file=sys.stderr)
 
     game_manager = Dice()  # Initialization of Game manager
     check_manager = Check()  # Initialization of Check manager
     bind_manager = Bind()  # Initialization of Bind manager
     menu_manager = Menu()  # Initialization of Menu manager
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    local_address = ("localhost", 10000)
-    bind_address(local_address, sock)
+    sock = None
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    except:
+        print('Can`t open socket! Program will be closed!', file=sys.stderr)
+        exit()
+
+    address = ("localhost", 10000)
+    try:
+        sock.bind(address)
+    except:
+        print('Can`t bind server to address: ' + address[0] + '! Program will be closed!', file=sys.stderr)
+
     sock.listen(1)
+
     while 1:
         my_logger.info('Server start listening')
         connections = 2
@@ -504,6 +484,8 @@ if __name__ == "__main__":
                 connections -= 1
                 my_logger.info('Player connected with IP: ' + str(player_address) + ' and with name: ' + player.name)
 
+        sock.listen(0)
+
         my_logger.info('Game started')
 
         time.sleep(0.1)
@@ -514,8 +496,6 @@ if __name__ == "__main__":
 
         while 1:
                 try:
-                    logging.debug("Player 1:" + str(Players[0].connection))  #DE
-                    logging.debug("Player 2:" + str(Players[1].connection))   #BUG
                     send_data_to_all_players(Players, "\nTurn: " + str(Players[0].name))
                     send_data_to_player(Players[1], "\nWait for your turn!\n\n")
                     time.sleep(0.1)
