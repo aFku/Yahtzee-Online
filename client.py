@@ -62,16 +62,17 @@ if __name__ == "__main__":
     input_enable = False
 
     while True:
+        try:
             data = recv_from_server(sock)
             if "Input_enable" not in data:
                 print(data)
             else:
                 response = ""
                 while response == "":
-                    try:
                         response = input("Input: ")
-                    except KeyboardInterrupt:
-                        response = "Disconnect"
                 send_to_server(sock, response)
             if "Closing!" in data:
                 break
+        except KeyboardInterrupt:
+            response = "Disconnect"
+            send_to_server(sock, response)
