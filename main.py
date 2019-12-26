@@ -112,9 +112,12 @@ class PlayerDisconnect(Exception):
 
 def clear_buffor(playerr):
     data = playerr.connection.recv(1024)
-    data = data.decode('ascii')
-    if "Disconnect" in data:
-        raise PlayerDisconnect
+    if data:
+        data = data.decode('ascii')
+        if "Disconnect" in data:
+            raise PlayerDisconnect
+    else:
+        pass
 
 
 def recv_from_player(playerr):
