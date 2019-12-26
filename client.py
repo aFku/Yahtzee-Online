@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(10)
+        sock.settimeout(10.0)
     except:
         print("Can`t create socket!  Program will be closed!", file=sys.stderr)
         exit()
