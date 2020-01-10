@@ -447,6 +447,7 @@ if __name__ == "__main__":
         my_logger.addHandler(handler)
     except:
         print('Can`t set up logger!  Program will be closed!', file=sys.stderr)
+        exit()
 
     game_manager = Dice()  # Initialization of Game manager
     check_manager = Check()  # Initialization of Check manager
@@ -465,6 +466,7 @@ if __name__ == "__main__":
         sock.bind(address)
     except:
         print('Can`t bind server to address: ' + address[0] + '! Program will be closed!', file=sys.stderr)
+        exit()
 
     sock.listen(1)
 

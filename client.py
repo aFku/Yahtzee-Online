@@ -32,15 +32,15 @@ if __name__ == "__main__":
         print("Can`t resolve this name. Try insert ip address of server", file=sys.stdout)
         address = input("Server IP: ")
 
-    try:
-        server_address = (address, 10000)
-    except:
-        print("Can`t connect to the server! Program will be closed!", file=sys.stderr)
-        exit()
+    server_address = (address, 10000)
 
     print("Connecting to server", file=sys.stdout)
 
-    sock.connect(server_address)
+    try:
+        sock.connect(server_address)
+    except:
+        print("Can`t connect to the server! Program will be closed!", file=sys.stderr)
+        exit()
 
     sock.sendall(bytearray(name, 'ascii'))
 
