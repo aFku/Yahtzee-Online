@@ -171,6 +171,8 @@ class Menu:
                 send_data_to_player(player, player.show_score(self.names))
             elif choice == 2:
                 if re_roll_counter != 0:
+                    time.sleep(0.05)
+                    send_data_to_player(player, "\n Type numbers of boxes that you want reroll (1-5 with space)")
                     player.change_re_roll(gmaster.re_roll(player))
                     re_roll_counter -= 1
                 else:
